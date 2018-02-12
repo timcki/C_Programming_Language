@@ -17,7 +17,9 @@ typedef enum {
 	UNKNOWN
 } Optype;
 
-/* -> Basic calculator from exercise extended with enum type for operations. */
+/* -> Basic calculator from exercise extended with enum type for operations.
+ * -> Support for negative numbers and for modulus operand
+ */
 
 
 /* input handling */
@@ -32,6 +34,9 @@ void ungetch(int);
 void push(double);
 double pop(void);
 void pstack(void);
+double stacktop(void);
+void topdup(void);
+void swap(void);
 
 int
 main()
@@ -192,6 +197,35 @@ pstack(void)
 	}
 	printf("\n");
 }
+
+double
+stacktop(void)
+{
+	if (sp)
+		return stack[sp-1];
+	else
+		printf("ERROR: Stack empty\n");
+}
+
+void stackdup(void)
+{
+	int i, tmp;
+	if (sp < 99) {
+		for (i = sp-1; i > 0; i--)
+			stack[i] =  stack[i+1];
+		sp++;
+		stack[1] = stack[0];
+	}
+	else
+		printf("ERROR: Stack full can't duplicate top\n");
+}
+
+void swap(void)
+{
+	int tmp;
+	tmp = stack[0]; stack[0] = stack[1]; stack[1] = tmp;
+}
+
 
 
 #define BUFSIZE 100
