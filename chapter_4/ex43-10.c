@@ -4,17 +4,32 @@
 
 #define MAXOP 100
 
-
 typedef enum {
+	/* basic types */
 	NUMBER,
+	RESULT,
+	UNKNOWN,
+
+	/* basic operations */
 	ADDITION,
 	SUBSTRACTION,
 	MULTIPLICATION,
 	DIVISION,
 	MODULO,
-	RESULT,
-	QUIT,
-	UNKNOWN
+
+	/* math.h */
+	SIN,
+	COS,
+	TAN,
+
+	EXP,
+	LOG,
+
+	POW,
+	SQRT,
+
+	/* utility */
+	QUIT
 } Optype;
 
 /* -> Basic calculator from exercise extended with enum type for operations.
@@ -103,6 +118,7 @@ Optype
 translateOp(char c)
 {
 	switch (c) {
+	/* base */
 	case '+':
 		return ADDITION;
 	case '-':
@@ -115,6 +131,8 @@ translateOp(char c)
 		return RESULT;
 	case '%':
 		return MODULO;
+
+	/* math.h */
 	case 'q':
 		return QUIT;
 	default:
