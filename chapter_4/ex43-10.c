@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+#include <math.h>
 
 #define MAXOP 100
 
@@ -40,6 +43,7 @@ typedef enum {
 /* input handling */
 Optype getOp(char []);
 Optype translateOp(char);
+Optype translateSOp(char s[]);
 
 /* buffer management */
 int getch(void);
@@ -99,6 +103,43 @@ main()
 				printf("ERROR: Division by zero\n");
 			break;
 
+		case SIN:
+			push(sin(pop()));
+			break;
+
+		case COS:
+			push(cos(pop()));
+			break;
+
+		case TAN:
+			push(tan(pop()));
+			break;
+
+		case EXP:
+			push(exp(pop()));
+			break;
+
+		case LOG:
+			op2 = pop();
+			if (op2 < 0 || op2 == 1)
+				printf("ERROR: Bad logarithm\n");
+			else
+				push(log(op2));
+			break;
+
+		case POW:
+			op2 = pop();
+			push(pow(pop(), op2));
+			break;
+
+		case SQRT:
+			op2 = pop();
+			if (op2 < 0)
+				printf("ERROR: Square root of negative number\n");
+			else
+				push(sqrt(op2));
+			break;
+
 		case RESULT:
 			printf("\t%.8g\n", pop());
 			break;
@@ -132,7 +173,7 @@ translateOp(char c)
 	case '%':
 		return MODULO;
 
-	/* math.h */
+	/* utility */
 	case 'q':
 		return QUIT;
 	default:
@@ -141,9 +182,31 @@ translateOp(char c)
 }
 
 Optype
+translateSOp(char s[])
+{
+	if 		(!strcmp(s, "sin") || !strcmp(s, "SIN"))
+		return SIN;
+	else if (!strcmp(s, "cos") || !strcmp(s, "COS"))
+		return COS;
+	else if (!strcmp(s, "tan") || !strcmp(s, "TAN"))
+		return TAN;
+	else if (!strcmp(s, "exp") || !strcmp(s, "EXP"))
+		return EXP;
+	else if (!strcmp(s, "log") || !strcmp(s, "LOG"))
+		return LOG;
+	else if (!strcmp(s, "pow") || !strcmp(s, "POW"))
+		return POW;
+	else if (!strcmp(s, "sqrt") || !strcmp(s, "SQRT"))
+		return SQRT;
+	else
+		return UNKNOWN;
+}
+
+Optype
 getOp(char s[])
 {
 	int i, c, tmp;
+	/* escape all the whitespaces */
 	i = 0;
 	while ((s[0] = c = getch()) == ' ' || c == '\t')
 		;
@@ -151,9 +214,11 @@ getOp(char s[])
 
 	s[1] = '\0';
 
-	/* return operand if not number or - sign or fraction dot */
-	if (!isdigit(c) && c != '.' && c != '-')
+	/* return operand if not number or letter */
+	if (!isdigit(c) && !isalpha(c) && c != '-' && c != '.')
 		return translateOp(c);
+
+	/* handle negative numbers */
 	else if (c == '-') {
 		if (isdigit(c = getch())) {
 			s[++i] = c;
@@ -163,6 +228,17 @@ getOp(char s[])
 			return translateOp('-');
 		}
 	}
+
+	/* handle math.h operations */
+	else if (isalpha(c)) {
+		while (isalpha(s[++i] = c = getch()))
+			;
+		s[i] = '\0';
+		if (c != EOF)
+			ungetch(c);
+		return translateSOp(s);
+	}
+	
 	
 	/* integer part */
 	if (isdigit(c))
