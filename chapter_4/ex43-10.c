@@ -174,8 +174,6 @@ translateOp(char c)
 		return MODULO;
 
 	/* utility */
-	case 'q':
-		return QUIT;
 	default:
 		return UNKNOWN;
 	}
@@ -198,6 +196,8 @@ translateSOp(char s[])
 		return POW;
 	else if (!strcmp(s, "sqrt") || !strcmp(s, "SQRT"))
 		return SQRT;
+	else if (!strcmp(s, "q"))
+		return QUIT;
 	else
 		return UNKNOWN;
 }
