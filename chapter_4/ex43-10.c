@@ -12,6 +12,7 @@ typedef enum {
 	NUMBER,
 	RESULT,
 	UNKNOWN,
+	VARIABLE,
 
 	/* basic operations */
 	ADDITION,
@@ -19,15 +20,14 @@ typedef enum {
 	MULTIPLICATION,
 	DIVISION,
 	MODULO,
+	VARIABLE_WRITE,
 
 	/* math.h */
 	SIN,
 	COS,
 	TAN,
-
 	EXP,
 	LOG,
-
 	POW,
 	SQRT,
 
@@ -39,6 +39,11 @@ typedef enum {
  * -> Support for negative numbers and for modulus operand
  */
 
+/* variables */
+void pvars(void);
+void initvars(void);
+void writevar(char, double);
+double getvar(void);
 
 /* input handling */
 Optype getOp(char []);
@@ -57,12 +62,23 @@ double stacktop(void);
 void topdup(void);
 void swap(void);
 
+
+/* holds the value of read var */
+char var;
+
+
 int
 main()
 {
 	Optype type;
 	double op2;
 	char s[MAXOP];
+
+
+	/* -1 if no variable */
+	var = -1;
+
+	initvars();
 
 	while ((type = getOp(s)) != EOF) {
 
@@ -97,12 +113,29 @@ main()
 
 		case MODULO:
 			op2 = pop();
-			if (!op2)
+			if (op2)
 				push((int) pop() % (int) op2);
 			else
 				printf("ERROR: Division by zero\n");
 			break;
 
+		case VARIABLE:
+			var = s[0];
+			break;
+
+		case VARIABLE_WRITE:
+			/* normally if var is bigger than zero stack pops the value of it instead 
+			 * of next thing from stack. Edge case is assigning a value which is solved
+			 * by using op2 as a temporary place to store which letter is var
+			 */
+			op2 = var;
+			var = -1;
+
+			writevar(op2, pop());
+			break;
+
+
+		/* math.h */
 		case SIN:
 			push(sin(pop()));
 			break;
@@ -140,6 +173,7 @@ main()
 				push(sqrt(op2));
 			break;
 
+
 		case RESULT:
 			printf("\t%.8g\n", pop());
 			break;
@@ -155,11 +189,16 @@ main()
 	return 0;
 }
 
+
 Optype
 translateOp(char c)
 {
+
+	/* variables */
+	if (c >= 'a' && c <= 'z')
+		return VARIABLE;
+
 	switch (c) {
-	/* base */
 	case '+':
 		return ADDITION;
 	case '-':
@@ -168,12 +207,12 @@ translateOp(char c)
 		return DIVISION;
 	case '*':
 		return MULTIPLICATION;
-	case '\n': case '=':
+	case '\n':
 		return RESULT;
+	case '=':
+		return VARIABLE_WRITE;
 	case '%':
 		return MODULO;
-
-	/* utility */
 	default:
 		return UNKNOWN;
 	}
@@ -196,8 +235,7 @@ translateSOp(char s[])
 		return POW;
 	else if (!strcmp(s, "sqrt") || !strcmp(s, "SQRT"))
 		return SQRT;
-	else if (!strcmp(s, "q"))
-		return QUIT;
+
 	else
 		return UNKNOWN;
 }
@@ -231,6 +269,13 @@ getOp(char s[])
 
 	/* handle math.h operations */
 	else if (isalpha(c)) {
+		/* if just one char it's a variable and then use translateOp insted of entire
+		 * string comparison
+		 */
+		if (!isalpha(tmp = getch()))
+			return translateOp(c);
+		ungetch(tmp);
+
 		while (isalpha(s[++i] = c = getch()))
 			;
 		s[i] = '\0';
@@ -275,19 +320,24 @@ push(double v)
 double
 pop(void)
 {
-	if (sp)
+	if (sp) {
+		/* return variable if is used in operation */
+		if (var > 0)
+			return getvar();
 		/* (--sp) because sp is at next free position */
 		return stack[--sp];
+	}
 	printf("ERROR: Stack empty\n");
+	pvars();
 	return 0.0;
 }
 
 void
 pstack(void)
 {
-	printf("STACK(%d):\n", sp);
+	printf("stack(%d):\n", sp);
 	for (int i = 0; i < sp; ++i) {
-		printf("%f, ", stack[i]);
+		printf("%g, ", stack[i]);
 	}
 	printf("\n");
 }
@@ -341,4 +391,35 @@ ungetch(int c)
 		printf("ERROR: ungetch -  too many characters\n");
 	else
 		buf[bufp++] = c;
+}
+
+
+#define VARSIZE 26
+double vars[VARSIZE];
+
+void pvars(void)
+{
+	for (int i = 0; i < VARSIZE; i++)
+		printf("%c - %g\n", i + 'a', vars[i]);
+}
+
+void initvars(void)
+{
+	for (int i = 0; i < VARSIZE; i++) {
+		vars[i] = 0;
+	}
+}
+
+void writevar(char var, double val)
+{
+	vars[var-'a'] = val;
+	printf("ASSIGN: %c = %g\n", var, val);
+}
+
+double getvar(void)
+{
+	char tmp;
+	tmp = var;
+	var = -1;
+	return vars[tmp-'a'];
 }
